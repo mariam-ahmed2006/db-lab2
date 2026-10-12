@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}My To-Dos{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <h1 class="h3 mb-0">To-Do</h1>
+
+  <div class="d-flex align-items-center gap-2 flex-wrap">
+    <span>Hi, {{ name }}</span>
+
+    <a class="btn btn-sm btn-outline-secondary" href="/logout">
+      Log out
+    </a>
+  </div>
+</div>
+
+<!-- Task counts -->
+<div class="row g-2 mb-3" role="status" aria-label="Task counts">
+  <div class="col-6">
+    <div class="border border-success rounded bg-white p-3 text-center h-100">
+      <div class="h2 text-success mb-1">{{ done_count }}</div>
+      <div class="fw-semibold">Done</div>
+    </div>
+  </div>
+  <div class="col-6">
+    <div class="border border-secondary rounded bg-white p-3 text-center h-100">
+      <div class="h2 text-secondary mb-1">{{ open_count }}</div>
+      <div class="fw-semibold">Not done</div>
+    </div>
+  </div>
+</div>
+
+<!-- Display validation errors -->
+{% for e in errors %}
+  <div class="alert alert-danger py-2 mb-2">
+    {{ e }}
+  </div>
+{% endfor %}
+
+<!-- Add a new task -->
+<form method="POST"
+      action="/todos/add"
+      class="title-form d-flex flex-wrap gap-2 mb-3"
+      novalidate>
+
+  <input
+    class="form-control flex-grow-1 w-auto"
+    name="title"
+    placeholder="What needs to be done?"
+    maxlength="200">
+
+  <button class="btn btn-primary" type="submit">
+    Add
+  </button>
+</form>
+
+<!-- Message when there are no tasks -->
+{% if not todos %}
+  <p class="text-muted text-center my-4">
+    Nothing to do yet. Add your first task above!
+  </p>
+{% endif %}
+
+<!-- Display all tasks -->
+{% for t in todos %}
+<div class="d-flex align-items-start gap-2 mb-2">
+
+  <!-- Complete or reopen a task -->
+  <form method="POST" action="/todos/{{ t.todo_id }}/toggle">
+    <input
+      type="hidden"
+      name="is_done"
+      value="{{ 0 if t.is_done else 1 }}">
+
+    <button
+      class="btn btn-sm {{ 'btn-success' if t.is_done else 'btn-outline-secondary' }}"
+      type="submit"
+      aria-label="{{ 'Mark as open' if t.is_done else 'Mark as complete' }}">
+      {{ "✔" if t.is_done else "○" }}
+    </button>
+  </form>
+
+  <!-- Edit a task -->
+  <form
+    method="POST"
+    action="/todos/{{ t.todo_id }}/edit"
+    class="title-form d-flex flex-wrap gap-1 flex-grow-1"
+    novalidate>
+
+    <input
+      class="form-control form-control-sm flex-grow-1 w-auto {{ 'text-decoration-line-through text-muted' if t.is_done }}"
+      name="title"
+      value="{{ t.title }}"
+      maxlength="200">
+
+    <button class="btn btn-sm btn-outline-primary" type="submit">
+      Save
+    </button>
+  </form>
+
+  <!-- Delete a task -->
+  <form
+    method="POST"
+    action="/todos/{{ t.todo_id }}/delete"
+    onsubmit="return confirm('Are you sure?')">
+
+    <button class="btn btn-sm btn-outline-danger" type="submit">
+      Delete
+    </button>
+  </form>
+
+</div>
+{% endfor %}
+
+{% endblock %}
