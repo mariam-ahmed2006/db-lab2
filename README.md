@@ -123,9 +123,6 @@ The application is designed to provide the following features:
 - **R9 — Complete and Delete Tasks:** Users can mark tasks as completed or incomplete and delete tasks.
 - **R10 — Security and Ownership:** Parameterized SQL queries, password hashing, and user ownership checks help protect user data.
 
-**Bonus:** A responsive interface can be included to make the application usable on mobile devices.
-
-*Note: These feature descriptions must be checked against the actual implementation before submission. Do not claim a feature is complete until it has been implemented and tested.*
 
 ## 5. Database Structure
 
