@@ -183,6 +183,7 @@ This provides stronger input validation and ensures that every registered user h
 3- <img width="3840" height="2160" alt="Screenshot (8)" src="https://github.com/user-attachments/assets/c749885d-fcae-44f9-90ab-bcb65e037985" />
 4- <img width="3840" height="2160" alt="Screenshot (9)" src="https://github.com/user-attachments/assets/af9ed506-e5e1-4aad-9f71-8bf4d506931c" />
 5-<img width="3840" height="2160" alt="Screenshot (18)" src="https://github.com/user-attachments/assets/b5885ae2-bbd0-4054-aad4-56f562f586f5" />
+6-<img width="417" height="703" alt="Image 2026-10-13 at 3 58 18 AM" src="https://github.com/user-attachments/assets/b78934bf-6831-4242-a0c6-e1c6b2514979" />
 
 ## 8. Conclusion
 
