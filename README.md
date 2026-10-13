@@ -188,8 +188,3 @@ This provides stronger input validation and ensures that every registered user h
 ## 8. Conclusion
 
 This project demonstrates the integration of a MySQL database with a web application, including user registration, authentication, session management, data validation, and personal task management. It also demonstrates the importance of database constraints, secure password storage, parameterized SQL queries, and authorization checks.
-
-
-
-
-

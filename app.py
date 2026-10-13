@@ -25,55 +25,9 @@ def index():
     return redirect(url_for("login"))
 
 
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    errors = []
-
-    if request.method == "POST":
-        email = request.form.get("email", "").strip()
-        password = request.form.get("password", "")
-
-        if not email:
-            errors.append("Email is required")
-        if not password:
-            errors.append("Password is required")
-
-        if not errors:
-            conn = get_db()
-            try:
-                with conn.cursor() as cur:
-                    cur.execute(
-                        "SELECT user_id, name, password_hash "
-                        "FROM users WHERE email = %s",
-                        (email,),
-                    )
-                    user = cur.fetchone()
-            finally:
-                conn.close()
-
-            if user and bcrypt.checkpw(
-                password.encode("utf-8"),
-                user["password_hash"].encode("utf-8")
-            ):
-                session["user_id"] = user["user_id"]
-                session["name"] = user["name"]
-                return redirect(url_for("todos"))
-
-            errors.append("Invalid email or password")
-
-    return render_template("login.html", errors=errors)
-
-
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect(url_for("login"))
-
-
 @app.route("/register", methods=["GET", "POST"])
 def register():
     errors = []
-
     if request.method == "POST":
         name = request.form.get("name", "").strip()
         email = request.form.get("email", "").strip()
@@ -92,25 +46,18 @@ def register():
             errors.append("Passwords do not match")
 
         if not errors:
-            hashed = bcrypt.hashpw(
-                password.encode("utf-8"),
-                bcrypt.gensalt()
-            ).decode("utf-8")
-
+            hashed = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
             conn = get_db()
             try:
                 with conn.cursor() as cur:
                     cur.execute(
-                        "INSERT INTO users (email, name, password_hash) "
-                        "VALUES (%s, %s, %s)",
+                        "INSERT INTO users (email, name, password_hash) VALUES (%s, %s, %s)",
                         (email, name, hashed),
                     )
                     conn.commit()
                     session["user_id"] = cur.lastrowid
                     session["name"] = name
-
                 return redirect(url_for("todos"))
-
             except pymysql.err.IntegrityError as e:
                 if e.args[0] == 1062:
                     errors.append("Email Already Exists")
@@ -122,14 +69,52 @@ def register():
     return render_template("register.html", errors=errors)
 
 
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    errors = []
+    if request.method == "POST":
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "")
+
+        if not email:
+            errors.append("Email is required")
+        if not password:
+            errors.append("Password is required")
+
+        if not errors:
+            conn = get_db()
+            try:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "SELECT user_id, name, password_hash FROM users WHERE email = %s",
+                        (email,),
+                    )
+                    user = cur.fetchone()
+            finally:
+                conn.close()
+
+            if user and bcrypt.checkpw(password.encode("utf-8"), user["password_hash"].encode("utf-8")):
+                session["user_id"] = user["user_id"]
+                session["name"] = user["name"]
+                return redirect(url_for("todos"))
+            errors.append("Invalid email or password")
+
+    return render_template("login.html", errors=errors)
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
+
+
 def fetch_todos(user_id):
     conn = get_db()
     try:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT todo_id, title, is_done, created_at "
-                "FROM todos WHERE user_id = %s "
-                "ORDER BY todo_id DESC",
+                "SELECT todo_id, title, is_done, created_at FROM todos "
+                "WHERE user_id = %s ORDER BY todo_id DESC",
                 (user_id,),
             )
             return cur.fetchall()
@@ -156,24 +141,14 @@ def title_error(title):
 
 
 def show_todos(errors):
-    # Get only the current user's tasks
-    todos = fetch_todos(session["user_id"])
-
-    # BONUS: Count completed and open tasks
-    open_count = sum(
-        1 for todo in todos if not todo["is_done"]
-    )
-
-    done_count = sum(
-        1 for todo in todos if todo["is_done"]
-    )
-
+    items = fetch_todos(session["user_id"])
+    done_count = sum(1 for t in items if t["is_done"])
     return render_template(
         "todos.html",
-        todos=todos,
+        todos=items,
         errors=errors,
         name=session["name"],
-        open_count=open_count,
+        open_count=len(items) - done_count,
         done_count=done_count,
     )
 
@@ -182,7 +157,6 @@ def show_todos(errors):
 def todos():
     if "user_id" not in session:
         return redirect(url_for("login"))
-
     return show_todos([])
 
 
@@ -190,18 +164,14 @@ def todos():
 def add_todo():
     if "user_id" not in session:
         return redirect(url_for("login"))
-
     title = request.form.get("title", "").strip()
     err = title_error(title)
-
     if err:
         return show_todos([err])
-
     run_write(
         "INSERT INTO todos (user_id, title) VALUES (%s, %s)",
         (session["user_id"], title),
     )
-
     return redirect(url_for("todos"))
 
 
@@ -209,19 +179,14 @@ def add_todo():
 def edit_todo(todo_id):
     if "user_id" not in session:
         return redirect(url_for("login"))
-
     title = request.form.get("title", "").strip()
     err = title_error(title)
-
     if err:
         return show_todos([err])
-
     run_write(
-        "UPDATE todos SET title = %s "
-        "WHERE todo_id = %s AND user_id = %s",
+        "UPDATE todos SET title = %s WHERE todo_id = %s AND user_id = %s",
         (title, todo_id, session["user_id"]),
     )
-
     return redirect(url_for("todos"))
 
 
@@ -229,15 +194,11 @@ def edit_todo(todo_id):
 def toggle_todo(todo_id):
     if "user_id" not in session:
         return redirect(url_for("login"))
-
     is_done = 1 if request.form.get("is_done") == "1" else 0
-
     run_write(
-        "UPDATE todos SET is_done = %s "
-        "WHERE todo_id = %s AND user_id = %s",
+        "UPDATE todos SET is_done = %s WHERE todo_id = %s AND user_id = %s",
         (is_done, todo_id, session["user_id"]),
     )
-
     return redirect(url_for("todos"))
 
 
@@ -245,29 +206,22 @@ def toggle_todo(todo_id):
 def delete_todo(todo_id):
     if "user_id" not in session:
         return redirect(url_for("login"))
-
     run_write(
         "DELETE FROM todos WHERE todo_id = %s AND user_id = %s",
         (todo_id, session["user_id"]),
     )
-
     return redirect(url_for("todos"))
 
 
 @app.errorhandler(404)
 def not_found(e):
-    return render_template(
-        "error.html",
-        message="Page not found"
-    ), 404
+    return render_template("error.html", message="Page not found"), 404
 
 
 @app.errorhandler(500)
 def server_error(e):
-    return render_template(
-        "error.html",
-        message="Something went wrong. Please try again."
-    ), 500
+    return render_template("error.html", message="Something went wrong. Please try again."), 500
+
 
 if __name__ == "__main__":
     app.run(debug=True)
