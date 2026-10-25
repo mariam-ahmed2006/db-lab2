@@ -1,6 +1,11 @@
 {% extends "base.html" %}
 {% block title %}My To-Dos{% endblock %}
 {% block content %}
+<div class="mb-3 text-end">
+  <a href="{{ url_for('library_index') }}" class="btn btn-outline-primary">
+    📚 Open Library
+  </a>
+</div>
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h1 class="h3 mb-0">To-Do</h1>
   <div>Hi, {{ name }} <a class="btn btn-sm btn-outline-secondary ms-2" href="/logout">Log out</a></div>
